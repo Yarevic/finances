@@ -107,9 +107,13 @@ class DB:
     def __init__(self):
         self.conn = sqlite3.connect("todo.db") #Variable, die die Datenbank aufruft
         self.c = self.conn.cursor() #Wir rufen die Methode Cursor auf, mit der wir die Daten verarbeiten werden
-        self.c.execute('''CREATE TABLE IF NOT EXISTS todo (id integer primary key, date text, description text, transaction text, category text, sum real)''') # integer = ganze Zahl, real = Zahl mit Komma
+        self.c.execute('''CREATE TABLE IF NOT EXISTS todo (id integer primary key, date text, description text, transaction text, category text, summ real)''') # integer = ganze Zahl, real = Zahl mit Komma
         self.conn.commit()
-        
+
+    def insert_data(self, date, description, transaction, category, summ):        
+        self.c.execute('''INSERT INTO todo(date, description, transaction, category, summ) VALUES(?,?,?,?,?)''', (date, description, transaction, category, summ)) 
+        # Spalten fuer die Parameter werden zuerst geschaffen, danach werden die Paramter uebergeben
+        self.conn.commit() # Aendeungen werden in die DB eingetragen
 
 
 
