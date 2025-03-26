@@ -63,6 +63,12 @@ class Main(tk.Frame):
         Child()
     def record(self, date, description, transactions, category, summ): #die Namen der Paramter sind nur Labels. Wir koennen hier auch a,b,c,d... schreiben
         self.db.insert_data(date, description, transactions, category, summ)
+        self.view_records()
+
+    def view_records(self):
+        self.db.c.execute('''SELECT * FROM todo''') # Wir erhalten die Daten durch die Methode c (Cursor)
+        [self.tree.delete(i) for i in self.tree.get_children()]
+        [self.tree.insert("", "end", values=row) for row in self.db.c.fetchall()] 
 
 class Child(tk.Toplevel): # Toplevel: Master of popup windows
     def __init__(self):
