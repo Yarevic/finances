@@ -36,18 +36,18 @@ class Main(tk.Frame):
         btn_delete = tk.Button(toolbar, text="Delete task", bg="white", activebackground="red", compound=tk.BOTTOM, image=self.delete_img, width="100")
         btn_delete.pack(side=tk.LEFT)
 
-        self.tree = ttk.Treeview(self, columns=("ID", "date", "description", "transaction", "category", "sum"), height=20, show="headings")
+        self.tree = ttk.Treeview(self, columns=("ID", "date", "description", "transactions", "category", "sum"), height=20, show="headings")
         self.tree.column("ID", width=30, anchor=tk.CENTER)
         self.tree.column("date", width=100, anchor=tk.CENTER)
         self.tree.column("description", width=400, anchor=tk.W)
-        self.tree.column("transaction", width=70, anchor=tk.W)
+        self.tree.column("transactions", width=70, anchor=tk.W)
         self.tree.column("category", width=70, anchor=tk.W)
         self.tree.column("sum", width=70, anchor=tk.E)
 
         self.tree.heading("ID", text="ID")
         self.tree.heading("date", text="Date")
         self.tree.heading("description", text="Description")
-        self.tree.heading("transaction", text="Transaction")
+        self.tree.heading("transactions", text="Transactions")
         self.tree.heading("category", text="Category")
         self.tree.heading("sum", text="Sum")
 
@@ -61,8 +61,8 @@ class Main(tk.Frame):
 
     def open_popup_add(self):
         Child()
-    def record(self, date, description, transaction, category, summ):
-        print(1)
+    def record(self, date, description, transactions, category, summ): #die Namen der Paramter sind nur Labels. Wir koennen hier auch a,b,c,d... schreiben
+        self.db.insert_data(date, description, transactions, category, summ)
 
 class Child(tk.Toplevel): # Toplevel: Master of popup windows
     def __init__(self):
@@ -102,17 +102,18 @@ class Child(tk.Toplevel): # Toplevel: Master of popup windows
         
         cancel_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Abbrechen", padx=1, pady=5, command=self.destroy)
         cancel_button.place(x=250, y=250)
+        self.grab_set()
 
 class DB:
     def __init__(self):
         self.conn = sqlite3.connect("todo.db") #Variable, die die Datenbank aufruft
         self.c = self.conn.cursor() #Wir rufen die Methode Cursor auf, mit der wir die Daten verarbeiten werden
-        self.c.execute('''CREATE TABLE IF NOT EXISTS todo (id integer primary key, date text, description text, transaction text, category text, summ real)''') # integer = ganze Zahl, real = Zahl mit Komma
+        self.c.execute('''CREATE TABLE IF NOT EXISTS todo (id integer primary key, date text, description text, transactions text, category text, summ real)''') # integer = ganze Zahl, real = Zahl mit Komma
         self.conn.commit()
 
-    def insert_data(self, date, description, transaction, category, summ):        
-        self.c.execute('''INSERT INTO todo(date, description, transaction, category, summ) VALUES(?,?,?,?,?)''', (date, description, transaction, category, summ)) 
-        # Spalten fuer die Parameter werden zuerst geschaffen, danach werden die Paramter uebergeben
+    def insert_data(self, date, description, transactions, category, summ):        
+        self.c.execute('''INSERT INTO todo(date, description, transactions, category, summ) VALUES(?,?,?,?,?)''', (date, description, transactions, category, summ)) 
+        # Spalten fuer die Parameter werden zuerst geschaffen, danach werden die Parameter uebergeben
         self.conn.commit() # Aendeungen werden in die DB eingetragen
 
 
@@ -120,10 +121,10 @@ class DB:
 
 if __name__ == "__main__": # Diese Konstruktion ist eine Standardbedingung in Python, die sicherstellt, dass ein Skript nur dann ausgeführt wird, wenn es direkt gestartet wird – und nicht, wenn es als Modul importiert wird.
     window = tk.Tk()
+    db=DB()
     app = Main(window)
     app.pack()
     window.geometry("800x600")
     window.title("Task Manager")
-    db=DB()
     window.mainloop()
     
