@@ -8,6 +8,7 @@ class Main(tk.Frame):
         super().__init__(root) #берем root из фрейма, root основа создания фрейма
         self.init_main()
         self.db =  db
+        self.view_records()
 
     def init_main(self):
         toolbar = tk.Frame(bg="white", bd=5) # bd = border
@@ -109,6 +110,7 @@ class Child(tk.Toplevel): # Toplevel: Master of popup windows
         cancel_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Abbrechen", padx=1, pady=5, command=self.destroy)
         cancel_button.place(x=250, y=250)
         self.grab_set()
+        self.add_button.destroy()
 
 class DB:
     def __init__(self):
