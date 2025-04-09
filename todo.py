@@ -1,13 +1,13 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import sqlite3
 from PIL import Image, ImageTk # Bibliothek für die Arbeit mit Bildern
 
 class Main(tk.Frame):
     def __init__ (self, root):
         super().__init__(root) #берем root из фрейма, root основа создания фрейма
-        self.init_main()
         self.db =  db
+        self.init_main()
         self.view_records()
 
     def init_main(self):
@@ -60,16 +60,46 @@ class Main(tk.Frame):
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.tree.config(yscrollcommand=scrollbar.set)
 
+    def update_record(self, date, description, transactions, category, summ):
+        # Diese Methode aktualisiert einen bestehenden Datensatz (eine Zeile) in der SQLite-Datenbanktabelle todo. Sie basiert auf dem
+        # aktuell ausgewählten Eintrag in der GUI-Tabelle (self.tree), und ersetzt dessen Werte mit den neuen, übergebenen Parametern.
+        self.db.c.execute('''UPDATE todo SET date=?, description=?, transactions=?, category=?, summ=? WHERE ID=?''', (date, description, transactions, category, summ, self.tree.set(self.tree.selection()[0], "#1")))
+        # Das ist ein parameterisiertes Statement – das schützt vor SQL-Injection. Die Fragezeichen ? werden durch die folgenden Werte ersetzt (date...).
+        # self.tree.set(self.tree.selection()[0], "#1") - das ist die ID des aktuell ausgewählten Eintrags in der GUI-Tabelle (Treeview)
+        # self.tree.selection() gibt eine Liste von ausgewählten Einträgen zurück. [0] nimmt das erste ausgewählte Element.
+        # self.tree.set(item, "#1") gibt den Wert in der ersten Spalte (Spalte mit der ID) dieses Elements zurück.
+        self.db.conn.commit()
+        self.view_records()
+        
+
     def open_popup_add(self):
         Child()
     def record(self, date, description, transactions, category, summ): #die Namen der Paramter sind nur Labels. Wir koennen hier auch a,b,c,d... schreiben
+        if len(description.strip()) <3:
+            # Messagebox ist ein Element von tk und hat diverse Methoden an Board, z.B. showerror.
+            messagebox.showerror("Fehlermeldung", "Die Beschreibung muss mind. 3 Zeichen lang sein!")
+        elif not summ.strip():
+            messagebox.showerror("Fehlermeldung", "Du musst eine Summe eintragen!")
+        elif not date.strip():
+            messagebox.showerror("Fehlermeldung", "Du musst ein Datum eintragen!")
+            
         self.db.insert_data(date, description, transactions, category, summ)
         self.view_records()
 
     def view_records(self):
         self.db.c.execute('''SELECT * FROM todo''') # Wir erhalten die Daten durch die Methode c (Cursor)
         [self.tree.delete(i) for i in self.tree.get_children()]
-        [self.tree.insert("", "end", values=row) for row in self.db.c.fetchall()] 
+        [self.tree.insert("", "end", values=row) for row in self.db.c.fetchall()]
+
+    def open_popup_edit(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showwarning("Keine Auswahl", "Bitte wähle einen Eintrag aus.")
+            return
+
+        values = self.tree.item(selected[0], 'values')  # Tuple: (id, date, description, transactions, category, sum)
+        ChildEdit(self, values)
+
 
 class Child(tk.Toplevel): # Toplevel: Master of popup windows
     def __init__(self):
@@ -81,6 +111,7 @@ class Child(tk.Toplevel): # Toplevel: Master of popup windows
         self.geometry("600x400")
         self.title("Add Operation")
         self.configure(bg="grey")
+
 
         operation_name_label = tk.Label(self, bg="grey", fg="black", text = "Bezeichnung", padx = 1, pady = 5)
         operation_name_label.grid(row=0, column=0, sticky="E")
@@ -106,11 +137,76 @@ class Child(tk.Toplevel): # Toplevel: Master of popup windows
         self.add_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Speichern", padx=1, pady=5)
         self.add_button.place(x=100, y=250)
         self.add_button.bind("<Button-1>", lambda event: self.view.record(self.date_entry.get(), self.operation_entry.get(), self.inout_combo.get(), self.category_combo.get(), self.sum_entry.get())) #Привязываем событие кликов левой клавиша мыши к кнопке "добавить"
-        
+            
         cancel_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Abbrechen", padx=1, pady=5, command=self.destroy)
         cancel_button.place(x=250, y=250)
         self.grab_set()
-        self.add_button.destroy()
+
+class ChildEdit(tk.Toplevel):
+    def __init__(self, parent, values):
+        super().__init__(parent)
+        self.parent = parent
+        self.record_id = values[0]  # ID speichern für UPDATE später
+
+        self.title("Datensatz bearbeiten")
+        self.geometry("600x400")
+        self.configure(bg="grey")
+
+        # Felder mit Werten befüllen
+        tk.Label(self, text="Bezeichnung", bg="grey").grid(row=0, column=0, sticky="e")
+        self.operation_entry = tk.Entry(self, width=75)
+        self.operation_entry.insert(0, values[2])
+        self.operation_entry.grid(row=0, column=1)
+
+        tk.Label(self, text="Eingang/Ausgang", bg="grey").grid(row=1, column=0, sticky="e")
+        self.inout_combo = ttk.Combobox(self, values=['Eingang', 'Ausgang'])
+        self.inout_combo.set(values[3])
+        self.inout_combo.grid(row=1, column=1)
+
+        tk.Label(self, text="Kategorie", bg="grey").grid(row=2, column=0, sticky="e")
+        self.category_combo = ttk.Combobox(self, values=['Miete', 'Versicherung', 'Lebensmittel'])
+        self.category_combo.set(values[4])
+        self.category_combo.grid(row=2, column=1)
+
+        tk.Label(self, text="Summe", bg="grey").grid(row=3, column=0, sticky="e")
+        self.sum_entry = tk.Entry(self, width=10)
+        self.sum_entry.insert(0, values[5])
+        self.sum_entry.grid(row=3, column=1)
+
+        tk.Label(self, text="Datum (DD.MM.YY)", bg="grey").grid(row=4, column=0, sticky="e")
+        self.date_entry = tk.Entry(self, width=10)
+        self.date_entry.insert(0, values[1])
+        self.date_entry.grid(row=4, column=1)
+
+        # Änderung speichern
+        save_btn = tk.Button(self, text="Änderung speichern", bg="orange", command=self.save_changes)
+        save_btn.place(x=100, y=300)
+
+        cancel_btn = tk.Button(self, text="Abbrechen", bg="orange", command=self.destroy)
+        cancel_btn.place(x=250, y=300)
+
+        self.grab_set()
+
+    def save_changes(self):
+        date = self.date_entry.get()
+        description = self.operation_entry.get()
+        transaction = self.inout_combo.get()
+        category = self.category_combo.get()
+        summ = self.sum_entry.get()
+
+        if len(description.strip()) < 3:
+            messagebox.showerror("Fehler", "Beschreibung zu kurz.")
+            return
+        if not summ.strip():
+            messagebox.showerror("Fehler", "Summe fehlt.")
+            return
+
+        self.parent.db.c.execute('''UPDATE todo SET date=?, description=?, transactions=?, category=?, summ=? WHERE ID=?''',
+                                 (date, description, transaction, category, summ, self.record_id))
+        self.parent.db.conn.commit()
+        self.parent.view_records()
+        self.destroy()
+
 
 class DB:
     def __init__(self):
