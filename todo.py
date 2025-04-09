@@ -22,7 +22,7 @@ class Main(tk.Frame):
         btn_add.pack(side=tk.LEFT)
 
         self.edit_img = tk.PhotoImage(file="edit.gif")
-        btn_edit = tk.Button(toolbar, text="Edit task", bg="white", activebackground="red", compound=tk.BOTTOM, image=self.edit_img, width="100")
+        btn_edit = tk.Button(toolbar, text="Edit task", bg="white", activebackground="red", compound=tk.BOTTOM, image=self.edit_img, width="100", command=self.open_popup_edit)
         btn_edit.pack(side=tk.LEFT)
 
         self.refresh_img = tk.PhotoImage(file="refresh.gif")
@@ -54,6 +54,9 @@ class Main(tk.Frame):
 
         self.tree.pack(side=tk.LEFT)
 
+        self.search_label = tk.Label(self, bg="grey", fg="black", text = "Suche", padx = 1, pady = 5)
+        self.search_entry = tk.Entry(self, width=200)
+        self.search_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Finden", padx=1, pady=5)
 
         # Scrollbar
         scrollbar = tk.Scrollbar(self, command=self.tree.yview)
