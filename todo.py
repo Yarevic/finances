@@ -52,11 +52,14 @@ class Main(tk.Frame):
         self.tree.heading("category", text="Category")
         self.tree.heading("sum", text="Sum")
 
-        self.tree.pack(side=tk.LEFT)
+        self.tree.pack(side=tk.TOP)
 
         self.search_label = tk.Label(self, bg="grey", fg="black", text = "Suche", padx = 1, pady = 5)
         self.search_entry = tk.Entry(self, width=200)
         self.search_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Finden", padx=1, pady=5)
+        self.search_label.pack(side=tk.BOTTOM)
+        self.search_entry.pack(side=tk.BOTTOM)
+        self.search_button.pack(side=tk.BOTTOM)
 
         # Scrollbar
         scrollbar = tk.Scrollbar(self, command=self.tree.yview)
@@ -91,7 +94,7 @@ class Main(tk.Frame):
 
     def view_records(self):
         self.db.c.execute('''SELECT * FROM todo''') # Wir erhalten die Daten durch die Methode c (Cursor)
-        [self.tree.delete(i) for i in self.tree.get_children()]
+        [self.tree.delete(i) for i in self.tree.get_children()] # i wird nicht im Code definiert und wird automatisch auf 0 gesetzt. In jedem Zyklus wird dann der Wert +1 gesetzt
         [self.tree.insert("", "end", values=row) for row in self.db.c.fetchall()]
 
     def open_popup_edit(self):
