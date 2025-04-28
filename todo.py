@@ -57,13 +57,11 @@ class Main(tk.Frame): # Main ist ein Frame, also ein Container für andere GUI-E
 
         self.search_label = tk.Label(self, bg="grey", fg="black", text = "Suche", padx = 1, pady = 5)
         self.search_entry = tk.Entry(self, width=200)
-        self.search_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Finden", padx=1, pady=5, command = self.search_records(self.search_entry.get()))
+        search_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Finden", padx=1, pady=5)
         self.search_label.pack(side=tk.BOTTOM)
         self.search_entry.pack(side=tk.BOTTOM)
-        self.search_button.pack(side=tk.BOTTOM)
-        search_button.bind(
-            "<Button-1>",
-            lambda event: self.search_records(self.description.get()))
+        search_button.pack(side=tk.BOTTOM)
+        search_button.bind("<Button-1>", lambda event: self.search_records(self.search_entry.get()))
 
 
         # Scrollbar
@@ -112,10 +110,10 @@ class Main(tk.Frame): # Main ist ein Frame, also ein Container für andere GUI-E
         ChildEdit(self, values)
 
     def search_records(self, description):
-        description = ("%" + description + "%") #Leerzeichen werden ignoriert
-        self.db.c.execute('''SELECT * FROM todo WHERE description LIKE ?''', description) # WHERE description = Bezeichnung der Spalte, description = Variable fuer die Beschreibung
+        description = ("%" + description + "%",) #Leerzeichen werden ignoriert
+        self.db.c.execute('''SELECT * FROM todo WHERE description LIKE ?''', description) #WHERE description - Bezeichnung der Spalte, description - Variable fuer die Beschreibung
         [self.tree.delete(i) for i in self.tree.get_children()] # Entfernen von Daten aus der Ansicht. i wird nicht im Code definiert und wird automatisch auf 0 gesetzt. In jedem Zyklus wird dann der Wert +1 gesetzt
-        [self.tree.insert("", "end", values=row) for row in self.db.c.fetchall()]        
+        [self.tree.insert("", "end", values=row) for row in self.db.c.fetchall()] # fetchall: Show all elements from execute method from line 116      
 
 class Child(tk.Toplevel): # Toplevel: Master of popup windows
     def __init__(self):
