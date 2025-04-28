@@ -3,14 +3,14 @@ from tkinter import ttk, messagebox
 import sqlite3
 from PIL import Image, ImageTk # Bibliothek für die Arbeit mit Bildern
 
-class Main(tk.Frame):
-    def __init__ (self, root):
+class Main(tk.Frame): # Main ist ein Frame, also ein Container für andere GUI-Elemente.
+    def __init__ (self, root): #root ist das Hauptfenster (Tk()).
         super().__init__(root) #берем root из фрейма, root основа создания фрейма
         self.db =  db
-        self.init_main()
-        self.view_records()
+        self.init_main() #richtet GUI ein.
+        self.view_records() # lädt Daten aus DB in die Oberfläche (Tabelle).
 
-    def init_main(self):
+    def init_main(self): #Erstellt eine Toolbar mit Buttons (Add, Edit, Refresh, Search, Delete).
         toolbar = tk.Frame(bg="white", bd=5) # bd = border
         toolbar.pack(side=tk.TOP, fill=tk.X) #erstellt die Toolbar oben, fill=tk.X bildet die Horiyontale Linie x, auf der die Elemente angeordnet werden
 
@@ -37,7 +37,8 @@ class Main(tk.Frame):
         btn_delete = tk.Button(toolbar, text="Delete task", bg="white", activebackground="red", compound=tk.BOTTOM, image=self.delete_img, width="100")
         btn_delete.pack(side=tk.LEFT)
 
-        self.tree = ttk.Treeview(self, columns=("ID", "date", "description", "transactions", "category", "sum"), height=20, show="headings")
+        #Die Tabelle (ttk.Treeview) zeigt Datenbankinhalte:
+        self.tree = ttk.Treeview(self, columns=("ID", "date", "description", "transactions", "category", "sum"), height=20, show="headings") 
         self.tree.column("ID", width=30, anchor=tk.CENTER)
         self.tree.column("date", width=100, anchor=tk.CENTER)
         self.tree.column("description", width=400, anchor=tk.W)
@@ -56,10 +57,14 @@ class Main(tk.Frame):
 
         self.search_label = tk.Label(self, bg="grey", fg="black", text = "Suche", padx = 1, pady = 5)
         self.search_entry = tk.Entry(self, width=200)
-        self.search_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Finden", padx=1, pady=5)
+        self.search_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Finden", padx=1, pady=5, command = self.search_records(self.search_entry.get()))
         self.search_label.pack(side=tk.BOTTOM)
         self.search_entry.pack(side=tk.BOTTOM)
         self.search_button.pack(side=tk.BOTTOM)
+        search_button.bind(
+            "<Button-1>",
+            lambda event: self.search_records(self.description.get()))
+
 
         # Scrollbar
         scrollbar = tk.Scrollbar(self, command=self.tree.yview)
@@ -94,7 +99,7 @@ class Main(tk.Frame):
 
     def view_records(self):
         self.db.c.execute('''SELECT * FROM todo''') # Wir erhalten die Daten durch die Methode c (Cursor)
-        [self.tree.delete(i) for i in self.tree.get_children()] # i wird nicht im Code definiert und wird automatisch auf 0 gesetzt. In jedem Zyklus wird dann der Wert +1 gesetzt
+        [self.tree.delete(i) for i in self.tree.get_children()] # Entfernen von Daten aus der Ansicht. i wird nicht im Code definiert und wird automatisch auf 0 gesetzt. In jedem Zyklus wird dann der Wert +1 gesetzt
         [self.tree.insert("", "end", values=row) for row in self.db.c.fetchall()]
 
     def open_popup_edit(self):
@@ -106,6 +111,11 @@ class Main(tk.Frame):
         values = self.tree.item(selected[0], 'values')  # Tuple: (id, date, description, transactions, category, sum)
         ChildEdit(self, values)
 
+    def search_records(self, description):
+        description = ("%" + description + "%") #Leerzeichen werden ignoriert
+        self.db.c.execute('''SELECT * FROM todo WHERE description LIKE ?''', description) # WHERE description = Bezeichnung der Spalte, description = Variable fuer die Beschreibung
+        [self.tree.delete(i) for i in self.tree.get_children()] # Entfernen von Daten aus der Ansicht. i wird nicht im Code definiert und wird automatisch auf 0 gesetzt. In jedem Zyklus wird dann der Wert +1 gesetzt
+        [self.tree.insert("", "end", values=row) for row in self.db.c.fetchall()]        
 
 class Child(tk.Toplevel): # Toplevel: Master of popup windows
     def __init__(self):
