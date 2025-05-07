@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 from PIL import Image, ImageTk # Bibliothek für die Arbeit mit Bildern
+from datetime import datetime
 
 class Main(tk.Frame): # Main ist ein Frame, also ein Container für andere GUI-Elemente.
     def __init__ (self, root): #root ist das Hauptfenster (Tk()).
@@ -34,7 +35,7 @@ class Main(tk.Frame): # Main ist ein Frame, also ein Container für andere GUI-E
         btn_search.pack(side=tk.LEFT)    
   
         self.delete_img = tk.PhotoImage(file="delete.gif")
-        btn_delete = tk.Button(toolbar, text="Delete task", bg="white", activebackground="red", compound=tk.BOTTOM, image=self.delete_img, width="100")
+        btn_delete = tk.Button(toolbar, text="Delete task", bg="white", activebackground="red", compound=tk.BOTTOM, image=self.delete_img, width="100", command = self.delete_records)
         btn_delete.pack(side=tk.LEFT)
 
         #Die Tabelle (ttk.Treeview) zeigt Datenbankinhalte:
@@ -113,7 +114,22 @@ class Main(tk.Frame): # Main ist ein Frame, also ein Container für andere GUI-E
         description = ("%" + description + "%",) #Leerzeichen werden ignoriert
         self.db.c.execute('''SELECT * FROM todo WHERE description LIKE ?''', description) #WHERE description - Bezeichnung der Spalte, description - Variable fuer die Beschreibung
         [self.tree.delete(i) for i in self.tree.get_children()] # Entfernen von Daten aus der Ansicht. i wird nicht im Code definiert und wird automatisch auf 0 gesetzt. In jedem Zyklus wird dann der Wert +1 gesetzt
-        [self.tree.insert("", "end", values=row) for row in self.db.c.fetchall()] # fetchall: Show all elements from execute method from line 116      
+        [self.tree.insert("", "end", values=row) for row in self.db.c.fetchall()] # fetchall: Show all elements from execute method from line 116
+
+    def delete_records(self):
+        chosen_element = self.tree.selection()
+        if not chosen_element:
+            messagebox.showwarning("Keine Auswahl", "Bitte wähle einen Eintrag aus.")
+            return
+        items = "\n".join([self.tree.set(item,"#3") for item in chosen_element[:3]]) # \n Zeilenumbruch, join vereinigt Zeilen, #3 ist die description
+        if len(chosen_element) > 3:
+            items = items + f"\n ...und {len(chosen_element)- 3} Elemente"
+        complete = messagebox.askyesno("Bestätige die Löschung", f"Willst du wirklich die folgenden Elemente löschen? \n{items}",icon="warning")
+        if complete: #Eine Konstruktion, die genutzt wird, sobald complete true zurueckgibt
+            for deletion in self.tree.selection():
+                self.db.c.execute('''DELETE FROM todo WHERE ID=?''', (self.tree.set(deletion, "#1"),))
+                self.db.conn.commit()
+                self.view_records()           
 
 class Child(tk.Toplevel): # Toplevel: Master of popup windows
     def __init__(self):
@@ -146,8 +162,14 @@ class Child(tk.Toplevel): # Toplevel: Master of popup windows
         self.sum_entry.grid(row=3, column=1, sticky="W")
         date_label = tk.Label(self, bg="grey", fg="black", text = "Datum (DD.MM.YY)", padx = 1, pady = 5)
         date_label.grid(row=4, column=0, sticky="E")
+
+        current_data = datetime.now().strftime("%d.%m.%y") # Methode strftime() wird von der Bibliothek datetime zur Verfuegung gestellt
+        
+        
         self.date_entry = tk.Entry(self, width=8)
         self.date_entry.grid(row=4, column=1, sticky="W")
+        self.date_entry.insert(0, current_data) #The insert method is a tkinter method. 0 is defining the insertion into first position, current_data is the variable
+        
         self.add_button = tk.Button(self, bg="orange", activebackground="red", fg="black", font="Arial 15", text="Speichern", padx=1, pady=5)
         self.add_button.place(x=100, y=250)
         self.add_button.bind("<Button-1>", lambda event: self.view.record(self.date_entry.get(), self.operation_entry.get(), self.inout_combo.get(), self.category_combo.get(), self.sum_entry.get())) #Привязываем событие кликов левой клавиша мыши к кнопке "добавить"
